@@ -1,0 +1,14 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../../lib/GPIOlib.h
+
+/home/pi/workspace/EmbeddedSystemNJU2018-Demo/examples/GPIO/RunLine.cpp
+GPIOlib.h
+/home/pi/workspace/EmbeddedSystemNJU2018-Demo/examples/GPIO/GPIOlib.h
+
