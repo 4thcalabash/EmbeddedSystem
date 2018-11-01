@@ -5,8 +5,9 @@
 #include  <opencv2/opencv.hpp>
 
 const double PI = 3.1415926535897932384;
-
+#ifndef _FAKE
 using namespace GPIO;
+#endif
 using namespace cv;
 using namespace std;
 const string CAM_PATH = "/dev/video0";
@@ -16,11 +17,20 @@ const string CANNY_WINDOW_NAME = "Canny";
 const int CANNY_LOWER_BOUND = 50;
 const int CANNY_UPPER_BOUND = 250;
 const int HOUGH_THRESHOLD = 150;
-const double DELTA = 30;
+
+
+/** parameter to adjust **/
+const double LIMIT_K_LOWER_BOUND = 1;/** small is stable **/
+const double LIMIT_K_UPPER_BOUND = 5;
+const int normal_speed = 12;
+const int delta_speed = 1;
+const int TIME_INT = 150;
+/**                     **/
+
+
+
+int left_speed ,right_speed;
 typedef pair<Point,Point> LINE;
-pair<double,double> get_cross(LINE line1,LINE line2 ){
-	return {-1,-1};
-}
 void controlDirection(VideoCapture & capture){
 	Mat image;
 	capture>> image;
@@ -46,45 +56,88 @@ void controlDirection(VideoCapture & capture){
 		if ((theta>0.09 && theta< 1.48) or (theta>1.62 && theta < 3.05)){
 			if (theta > maxRad)maxRad = theta;
 			if (theta < minRad)minRad = theta;
-			Point pt1 = (rho/cos(theta),0);
-			Point pt2 = ((rho - result.rows*sin(theta))/cos(theta),result.rows);
+			Point pt1(rho/cos(theta),0);
+			Point pt2((rho - result.rows*sin(theta))/cos(theta),result.rows);
 			ls.push_back({pt1,pt2});
+#ifdef _DEBUG
+                        line(result,pt1,pt2,Scalar(0,255,255),3,CV_AA);
+#endif
 		}
 	}
+        lines.clear();
+        waitKey(1);
 	if (ls.size() <2)return;
-	pair<double,double > l1 = ls[0],l2 = ls[1];
-	pair<double,double> crossPoint = get_cross(l1,l2);
-	if (crossPoint.second < image.rows/2 - DELTA){
-		controlLeft(FORWARD,11);
-		controlRight(FORWARD,10);
-	}else if (crossPoint.second > image.rows/2 + DELTA){
-		controlLeft(FORWARD,10);
-		controlRight(FORWARD,11);
-	}
+        double min_pos_k = 1e10;
+        double min_neg_k = 1e10;
+        for (int i=0;i<(int32_t)ls.size();i++){
+                LINE & le = ls[i];
+                double k = le.second.y - le.first.y;
+                k /= (le.second.x - le.first.x);
+                //cout<<le.first.x<<","<<le.first.y<<endl;
+                //cout<<le.second.x<<","<<le.second.y<<endl;
+                //cout<<"k="<<k<<endl;
+#ifdef _DEBUG_MORE
+                stringstream stm;
+                stm<<"k = "<<k<<endl;
+                putText(result,stm.str(),Point((ls[i].first.x + ls[i].second.x)/2+rand()%5,(ls[i].first.y + ls[i].second.y)/2+rand()%100),2,0.8,Scalar(0,0,255),0);
+#endif
+
+                if (k>0){
+                        min_pos_k = min(min_pos_k,k);
+                }else{
+                        min_neg_k = min(min_neg_k,-k);
+                }
+        }
+#ifdef _DEBUG
+        imshow(MAIN_WINDOW_NAME,result);
+#endif
+        cout<<"min_pos_k: "<<min_pos_k<<endl;
+        cout<<"min_neg_k: "<<min_neg_k<<endl;
+        if (min_pos_k < LIMIT_K_LOWER_BOUND || min_neg_k >LIMIT_K_UPPER_BOUND){
+                //turn left
+                right_speed += delta_speed;
+                cout<<"turning left"<<endl;
+        }else if(min_neg_k < LIMIT_K_LOWER_BOUND || min_pos_k >LIMIT_K_UPPER_BOUND){
+                //turn right
+                left_speed += delta_speed;
+                cout<<"turning right"<<endl;
+        }     
 }
 
 
 int main()
 {
+#ifndef _FAKE
 	init();
+#endif
 	VideoCapture capture(CAM_PATH);
 	if (!capture.isOpened()){
 		capture.open(atoi(CAM_PATH.c_str()));
 	}
 	Mat image;
-	for (int i=1;i<=3;i++){
-		controlDirection(capture);
-		if (i&1){
-			controlLeft(FORWARD,10);
-			controlRight(FORWARD,10);
-		}else{
-			controlRight(FORWARD,10);
-			controlLeft(FORWARD,10);
-		}
-		delay(200);
-	}
+#ifndef _FAKE
+	for (int i=1;i<=100;i++){
+#else
+        while (1){
+#endif
+		left_speed = right_speed = normal_speed;
+                controlDirection(capture);
+
+#ifndef _FAKE
+		controlLeft(FORWARD,10);
+		controlRight(FORWARD,10);
+#else
+                cout<<"Left Speed = "<<left_speed<<endl;
+                cout<<"Right Speed = "<<right_speed<<endl;        
+#endif
+#ifndef _FAKE
+		delay(TIME_INT);
+#endif
+        }
+#ifndef _FAKE
 	stopLeft();
 	stopRight();
+#endif
 	return 0;
 
 
