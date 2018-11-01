@@ -5,7 +5,14 @@ using namespace GPIO;
 int main()
 {
 	init();
-
+	for (int i=1;i<=10;i++){
+		controlLeft(FORWARD,60);
+		controlRight(FORWARD,60);
+		delay(200);
+	}
+	stopLeft();
+	stopRight();
+	return 0;
 	//Move forward
 	controlLeft(FORWARD,50);
 	controlRight(FORWARD,50);
