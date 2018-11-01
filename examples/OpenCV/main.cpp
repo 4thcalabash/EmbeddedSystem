@@ -43,7 +43,7 @@ int main()
 			break;
 
 		//Set the ROI for the image
-		Rect roi(0,image.rows/3,image.cols,image.rows/3);
+		Rect roi(0,0,image.cols,image.rows);
 		Mat imgROI=image(roi);
 
 		//Canny algorithm
