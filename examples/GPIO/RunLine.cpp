@@ -22,7 +22,7 @@ const int HOUGH_THRESHOLD = 150;
 /** parameter to adjust **/
 const double LIMIT_K_LOWER_BOUND = 1;/** small is stable **/
 const double LIMIT_K_UPPER_BOUND = 5;
-const int normal_speed = 12;
+const int normal_speed = 13;
 const int delta_speed = 1;
 const int TIME_INT = 150;
 /**                     **/
